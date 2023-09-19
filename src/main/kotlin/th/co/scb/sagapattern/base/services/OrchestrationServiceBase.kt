@@ -57,7 +57,7 @@ abstract class OrchestrationServiceBase {
     }
 
     //Method to update process result in redis data
-    fun updateProcessResult(redisData: RequestModelBase, requestModel: RequestModelBase, serviceName: String): MutableList<ProcessResultModel> {
+    private fun updateProcessResult(redisData: RequestModelBase, requestModel: RequestModelBase, serviceName: String): MutableList<ProcessResultModel> {
         val currentProcess = redisData.processServices.find { it.serviceName == serviceName } ?: throw IllegalFlowException(SERVICE_PROCESS_NOT_FOUND)
 
 
@@ -75,7 +75,7 @@ abstract class OrchestrationServiceBase {
     }
 
     //Method to cancel process
-    fun cancelProcess(requestModel: RequestModelBase, serviceName: String) {
+    private fun cancelProcess(requestModel: RequestModelBase, serviceName: String) {
         val service = getServiceByName(serviceName)
         val cancelRequest = service.prepareCancelRequestModel(requestModel)
         service.cancel(cancelRequest)
@@ -84,7 +84,7 @@ abstract class OrchestrationServiceBase {
 
 
     //Method to get target service from service name
-    fun getServiceByName(serviceName: String): ServiceBaseInterface {
+    private fun getServiceByName(serviceName: String): ServiceBaseInterface {
         return relatedServices.first { it.javaClass.simpleName == serviceName }
     }
 
@@ -134,7 +134,7 @@ abstract class OrchestrationServiceBase {
     }
 
     //Method to generate refId
-    fun generateRefId(): String {
+    private fun generateRefId(): String {
         return UUID.randomUUID().toString()
     }
 
