@@ -27,8 +27,8 @@ class RedisService {
         //generate code to delete data from redis
     }
 
-    //Method to check data in redis
-    fun checkData(key: String): Boolean {
+    //Method to check key in redis
+    fun checkKey(key: String): Boolean {
         //generate code to check data in redis
         return true
     }
