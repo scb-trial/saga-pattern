@@ -19,7 +19,11 @@ class RedisService {
     //Method to retrieve data from redis
     fun retrieveData(key: String): RequestModelBase {
         //generate code to retrieve data from redis
-        return RequestModelBase("", "", emptySet())
+        return RequestModelBase(
+            refId = "",
+            requestInput = "",
+            relatedService = mutableSetOf()
+        )
     }
 
     //Method to delete data from redis
