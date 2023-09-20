@@ -44,16 +44,31 @@ abstract class OrchestrationServiceBase {
         val data = redis.retrieveData(redidKey)
 
         val serviceName = requestModel.serviceName ?: throw IllegalFlowException(SERVICE_NAME_IS_NULL)
-        // process itself
-        val updatedData = updateProcessResult(
-            redisData = data,
-            requestModel = requestModel,
-            serviceName = serviceName
-        )
-        data.processServices = updatedData
-        redis.updateData(redidKey, data)
 
-        // validate result in redis
+        // process itself
+        // check and process rollback
+        val updatedData =  validateAndProcessRollback(
+            requestModel = requestModel,
+            processResult = updateProcessResult(
+                redisData = data,
+                requestModel = requestModel,
+                serviceName = serviceName
+            ))
+        data.processServices = updatedData.toMutableList()
+
+
+        // validate result in redis all done
+        if (validateAllProcessIsDone(requestModel, updatedData)) {
+            redis.deleteData(redidKey)
+        } else
+            redis.updateData(redidKey, data)
+
+    }
+
+    //Method to  validate all process is done
+    fun validateAllProcessIsDone(requestModel: RequestModelBase, processResultModels: List<ProcessResultModel>): Boolean {
+        val noOfDoneProcess = processResultModels.count { it.status != ProcessStatus.PROCESSING }
+        return requestModel.relatedService.size == noOfDoneProcess
     }
 
     //Method to update process result in redis data
@@ -66,12 +81,31 @@ abstract class OrchestrationServiceBase {
             ProcessStatus.SUCCESS
         } else {
             // cancel all process
-            cancelProcess(requestModel, serviceName)
+//            cancelProcess(requestModel, serviceName)
             ProcessStatus.FAILED
         }
         val updatedProcess = currentProcess.copy(status = resultFlag)
         return redisData.processServices.replaceIf(Predicate.isEqual(currentProcess), updatedProcess).toMutableList()
 
+    }
+
+    // Method to validate and process rollback
+    private fun validateAndProcessRollback(requestModel: RequestModelBase,
+                                           processResult: List<ProcessResultModel>): List<ProcessResultModel> {
+        // validate have failed
+        if (processResult.find { it.status == ProcessStatus.FAILED } == null) return processResult
+
+        // process rollback for all process that success
+        val output = mutableListOf<ProcessResultModel>()
+        processResult.forEach { process ->
+            if (process.status == ProcessStatus.SUCCESS) {
+                cancelProcess(requestModel, process.serviceName)
+                output.add(process.copy(status = ProcessStatus.CANCELLED))
+            } else {
+                output.add(process)
+            }
+        }
+        return output
     }
 
     //Method to cancel process
